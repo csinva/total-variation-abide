@@ -74,6 +74,33 @@ def plot_tv_vary_lambda():
     plt.show()
 
 
+def plot_tv_vary_lambda_diff():
+    y = X[:, 58]
+    plt.plot([2 * i for i in range(np.diff(y).size)], np.diff(y), label='original')
+    lambdas = [1, 10, 25]
+    for vlambda in lambdas:
+        # vlambda = 50
+
+        x = cvx.Variable(y.size)
+        obj = cvx.Minimize(0.5 * cvx.sum_squares(y - x)
+                           + vlambda * cvx.tv(x))
+        prob = cvx.Problem(obj)
+        # ECOS and SCS solvers fail to converge before
+        # the iteration limit. Use CVXOPT instead.
+        prob.solve(solver=cvx.CVXOPT, verbose=True)
+        if prob.status != cvx.OPTIMAL:
+            raise Exception("Solver did not converge!")
+        xv = np.array(x.value).flatten()
+        plt.plot([2 * i for i in range(np.diff(xv).size)], np.diff(xv), label='TV  $\lambda=$' + str(vlambda))
+
+    plt.legend()
+    plt.xlim([0, 150])
+    plt.xlabel('Time (s)')
+    plt.ylabel('Neural response 1st derivative')
+    plt.savefig('figs/tv_vary_diff.pdf')
+    plt.show()
+
+
 def tv_X(X):
     X_out = np.zeros(shape=(146, 160))
     for i in range(160):
@@ -110,8 +137,8 @@ def tv_full(X):
 
     return x.value
 
-x2 = tv_full(X)
-pickle.dump(x2, open('x2.pkl', 'wb'))
+# x2 = tv_full(X)
+# pickle.dump(x2, open('x2.pkl', 'wb'))
 
 # covs = np.cov(X.transpose())
 
@@ -133,17 +160,18 @@ pickle.dump(x2, open('x2.pkl', 'wb'))
 # x = tv_X(X)
 # pickle.dump(x, open('x.pkl', 'wb'))
 # print(x.shape)
-x = pickle.load(open('x.pkl', 'rb'))
-covs = np.cov(x.transpose())
+# x = pickle.load(open('x.pkl', 'rb'))
+# covs = np.cov(x.transpose())
 # plt.plot(x[:, 58])
 # plt.plot(X[:, 58])
 # plt.show()
-plot_cov(covs, tv=True)
-plot_connectome(covs, tv=True)
+# plot_cov(covs, tv=True)
+# plot_connectome(covs, tv=True)
 
 
 
 # individual plots
 # plot_idxs([58, 139])
 # plot_tv_vary_lambda()
+plot_tv_vary_lambda_diff()
 # plt.show()
